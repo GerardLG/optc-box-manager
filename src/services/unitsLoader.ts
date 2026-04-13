@@ -1,7 +1,24 @@
 import type { ExtendedUnit } from '../models/units'
 
-const UNITS_URL   = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data/units.json'
-const DETAILS_URL = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data/details.json'
+const BASE = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data'
+const UNITS_URL   = `${BASE}/units.js`
+const DETAILS_URL = `${BASE}/details.js`
+
+// optc-db serves JS files like: var units = [[...], ...]
+// We extract the array by evaling the variable assignment safely
+function extractArray(js: string, varName: string): unknown[] {
+  const match = js.match(new RegExp(`var\\s+${varName}\\s*=\\s*(\\[)`))
+  if (!match || match.index === undefined) throw new Error(`No se encontró '${varName}' en el JS`)
+  const start = match.index + js.indexOf('[', match.index)
+  // Find the matching closing bracket
+  let depth = 0
+  let end = start
+  for (let i = start; i < js.length; i++) {
+    if (js[i] === '[') depth++
+    else if (js[i] === ']') { depth--; if (depth === 0) { end = i; break } }
+  }
+  return JSON.parse(js.slice(start, end + 1))
+}
 
 export async function fetchAllUnits(
   onProgress?: (pct: number) => void
@@ -13,17 +30,24 @@ export async function fetchAllUnits(
     fetch(DETAILS_URL),
   ])
 
-  if (!unitsRes.ok)   throw new Error(`No se pudo cargar units.json (${unitsRes.status})`)
-  if (!detailsRes.ok) throw new Error(`No se pudo cargar details.json (${detailsRes.status})`)
+  if (!unitsRes.ok)   throw new Error(`No se pudo cargar units.js (${unitsRes.status})`)
+  if (!detailsRes.ok) throw new Error(`No se pudo cargar details.js (${detailsRes.status})`)
 
-  onProgress?.(40)
+  onProgress?.(30)
+
+  const [unitsText, detailsText] = await Promise.all([
+    unitsRes.text(),
+    detailsRes.text(),
+  ])
+
+  onProgress?.(60)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawUnits: any[]   = await unitsRes.json()
+  const rawUnits  = extractArray(unitsText,   'units')   as any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawDetails: any[] = await detailsRes.json()
+  const rawDetails = extractArray(detailsText, 'details') as any[]
 
-  onProgress?.(75)
+  onProgress?.(80)
 
   const result: ExtendedUnit[] = rawUnits.map((row, idx) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
