@@ -1,7 +1,7 @@
 import type { ExtendedUnit } from '../models/units'
 
-const UNITS_URL   = 'https://raw.githubusercontent.com/optc-db/optc-db/master/common/data/units.json'
-const DETAILS_URL = 'https://raw.githubusercontent.com/optc-db/optc-db/master/common/data/details.json'
+const UNITS_URL   = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data/units.json'
+const DETAILS_URL = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data/details.json'
 
 export async function fetchAllUnits(
   onProgress?: (pct: number) => void
@@ -13,8 +13,8 @@ export async function fetchAllUnits(
     fetch(DETAILS_URL),
   ])
 
-  if (!unitsRes.ok)   throw new Error('No se pudo cargar units.json')
-  if (!detailsRes.ok) throw new Error('No se pudo cargar details.json')
+  if (!unitsRes.ok)   throw new Error(`No se pudo cargar units.json (${unitsRes.status})`)
+  if (!detailsRes.ok) throw new Error(`No se pudo cargar details.json (${detailsRes.status})`)
 
   onProgress?.(40)
 
