@@ -41,15 +41,15 @@ export interface ExtendedUnit {
   minHP: number
   maxHP: number
   limitHP: number
-  limitexHP: number
+  limitexHP?: number
   minATK: number
   maxATK: number
   limitATK: number
-  limitexATK: number
+  limitexATK?: number
   minRCV: number
   maxRCV: number
   limitRCV: number
-  limitexRCV: number
+  limitexRCV?: number
   cooldown?: [number, number]
   aliases?: string[]
   flags?: { global?: boolean; japan?: boolean; rr?: boolean; tn?: boolean }
