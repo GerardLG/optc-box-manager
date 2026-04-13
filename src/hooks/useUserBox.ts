@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import { v4 as uuid } from 'uuid'
 import type { UserUnit } from '../models/userBox'
 import type { ExtendedUnit } from '../models/units'
 import { loadBox, saveBox, exportBoxJSON, importBoxJSON } from '../services/storage'
@@ -16,7 +15,7 @@ export function useUserBox() {
     setBox(prev => {
       if (prev.some(u => u.unit.id === unit.id)) return prev
       const entry: UserUnit = {
-        id: uuid(),
+        id: crypto.randomUUID(),
         unit,
         level: { lvl: unit.maxLevel },
         cc: { hp: 0, atk: 0, rcv: 0 },
@@ -29,11 +28,19 @@ export function useUserBox() {
   }, [])
 
   const remove = useCallback((id: string) => {
-    setBox(prev => { const next = prev.filter(u => u.id !== id); saveBox(next); return next })
+    setBox(prev => {
+      const next = prev.filter(u => u.id !== id)
+      saveBox(next)
+      return next
+    })
   }, [])
 
   const update = useCallback((updated: UserUnit) => {
-    setBox(prev => { const next = prev.map(u => u.id === updated.id ? updated : u); saveBox(next); return next })
+    setBox(prev => {
+      const next = prev.map(u => u.id === updated.id ? updated : u)
+      saveBox(next)
+      return next
+    })
   }, [])
 
   const exportDB = useCallback(() => exportBoxJSON(box), [box])
