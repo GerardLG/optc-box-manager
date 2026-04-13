@@ -4,18 +4,25 @@ const BASE = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master
 const UNITS_URL   = `${BASE}/units.js`
 const DETAILS_URL = `${BASE}/details.js`
 
-// optc-db serves JS files like: var units = [[...], ...]
-// We extract the array by evaling the variable assignment safely
+// optc-db serves JS files like: window.units = [[...], ...]
+// The regex accepts both "var x =" and "window.x =" patterns
 function extractArray(js: string, varName: string): unknown[] {
-  const match = js.match(new RegExp(`var\\s+${varName}\\s*=\\s*(\\[)`))
+  const pattern = new RegExp(`(?:var\\s+${varName}|window\.${varName})\\s*=\\s*(\\[)`)
+  const match = pattern.exec(js)
   if (!match || match.index === undefined) throw new Error(`No se encontró '${varName}' en el JS`)
-  const start = match.index + js.indexOf('[', match.index)
-  // Find the matching closing bracket
+
+  // Find the position of the '[' that opens the array
+  const start = js.indexOf('[', match.index)
+
+  // Walk forward matching brackets to find the end of the array
   let depth = 0
   let end = start
   for (let i = start; i < js.length; i++) {
     if (js[i] === '[') depth++
-    else if (js[i] === ']') { depth--; if (depth === 0) { end = i; break } }
+    else if (js[i] === ']') {
+      depth--
+      if (depth === 0) { end = i; break }
+    }
   }
   return JSON.parse(js.slice(start, end + 1))
 }
@@ -43,7 +50,7 @@ export async function fetchAllUnits(
   onProgress?.(60)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawUnits  = extractArray(unitsText,   'units')   as any[]
+  const rawUnits   = extractArray(unitsText,   'units')   as any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawDetails = extractArray(detailsText, 'details') as any[]
 
