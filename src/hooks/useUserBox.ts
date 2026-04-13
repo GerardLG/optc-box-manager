@@ -1,54 +1,49 @@
 import { useState, useCallback } from 'react'
-import { v4 as uuidv4 } from 'uuid'
-import type { UserBox, UserUnit } from '../models/userBox'
+import { v4 as uuid } from 'uuid'
+import type { UserUnit } from '../models/userBox'
 import type { ExtendedUnit } from '../models/units'
 import { loadBox, saveBox, exportBoxJSON, importBoxJSON } from '../services/storage'
 
 export function useUserBox() {
-  const [box, setBoxState] = useState<UserBox>(loadBox)
+  const [box, setBox] = useState<UserUnit[]>(loadBox)
 
-  function persist(next: UserBox) {
-    setBoxState(next)
+  const persist = useCallback((next: UserUnit[]) => {
+    setBox(next)
     saveBox(next)
-  }
-
-  const add = useCallback((unit: ExtendedUnit) => {
-    setBoxState(prev => {
-      const next = [...prev, {
-        id: uuidv4(),
-        unit,
-        level: { lvl: 1, enhancedMaxLevel: false, limitLevel: false },
-        cc: { hp: 0, atk: 0, rcv: 0 },
-      }]
-      saveBox(next)
-      return next
-    })
   }, [])
 
-  const update = useCallback((updated: UserUnit) => {
-    setBoxState(prev => {
-      const next = prev.map(u => u.id === updated.id ? updated : u)
+  const add = useCallback((unit: ExtendedUnit) => {
+    setBox(prev => {
+      if (prev.some(u => u.unit.id === unit.id)) return prev
+      const entry: UserUnit = {
+        id: uuid(),
+        unit,
+        level: { lvl: unit.maxLevel },
+        cc: { hp: 0, atk: 0, rcv: 0 },
+        createdAt: Date.now(),
+      }
+      const next = [...prev, entry]
       saveBox(next)
       return next
     })
   }, [])
 
   const remove = useCallback((id: string) => {
-    setBoxState(prev => {
-      const next = prev.filter(u => u.id !== id)
-      saveBox(next)
-      return next
-    })
+    setBox(prev => { const next = prev.filter(u => u.id !== id); saveBox(next); return next })
   }, [])
 
-  const reset = useCallback(() => persist([]), [])
-
-  const exportDB = useCallback(async () => { exportBoxJSON(box) }, [box])
-
-  const importDB = useCallback((json: string) => {
-    const data = importBoxJSON(json)
-    persist(data)
+  const update = useCallback((updated: UserUnit) => {
+    setBox(prev => { const next = prev.map(u => u.id === updated.id ? updated : u); saveBox(next); return next })
   }, [])
 
-  return { box, add, update, remove, reset, exportDB, importDB }
+  const exportDB = useCallback(() => exportBoxJSON(box), [box])
+
+  const importDB = useCallback((raw: string) => {
+    const imported = importBoxJSON(raw)
+    persist(imported)
+  }, [persist])
+
+  const reset = useCallback(() => persist([]), [persist])
+
+  return { box, add, remove, update, exportDB, importDB, reset }
 }

@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import type { SearchFilters } from '../../hooks/useSearch'
-import { UnitTypes, UnitClasses, Rarity } from '../../models/units'
-import type { UnitType, UnitClass, UnitStar } from '../../models/units'
+import type { UnitType } from '../../models/units'
 import styles from './SearchPanel.module.css'
+
+const ALL_TYPES: UnitType[] = ['STR','DEX','QCK','PSY','INT','DUAL','VS']
+const TYPE_COLORS: Record<UnitType, string> = {
+  STR:'#c0392b', DEX:'#27ae60', QCK:'#2980b9',
+  PSY:'#8e44ad', INT:'#d35400', DUAL:'#7f8c8d', VS:'#16a085'
+}
+const ALL_CLASSES = [
+  'Fighter','Slasher','Shooter','Free Spirit','Cerebral','Powerhouse',
+  'Driven','Tanker','Striker','Navy','Pirate','Imposter'
+]
 
 interface Props {
   filters: SearchFilters
@@ -12,69 +21,59 @@ interface Props {
   filteredCount: number
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  STR:'#e63946', DEX:'#2ecc71', QCK:'#3498db', PSY:'#9b59b6',
-  INT:'#f39c12', DUAL:'#7f8c8d', VS:'#16a085',
-}
-
 export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCount }: Props) {
-  const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
-  const toggleType = (t: UnitType) => onChange({ ...filters, types: filters.types.includes(t) ? filters.types.filter(x => x !== t) : [...filters.types, t] })
-  const toggleStar = (s: UnitStar) => onChange({ ...filters, stars: filters.stars.includes(s) ? filters.stars.filter(x => x !== s) : [...filters.stars, s] })
-  const toggleClass = (c: UnitClass) => onChange({ ...filters, classes: filters.classes.includes(c) ? filters.classes.filter(x => x !== c) : [...filters.classes, c] })
+  function toggle<K extends keyof SearchFilters>(key: K, value: SearchFilters[K] extends unknown[] ? SearchFilters[K][number] : never) {
+    const arr = filters[key] as unknown[]
+    const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]
+    onChange({ ...filters, [key]: next })
+  }
 
-  const hasFilters = filters.query || filters.types.length || filters.stars.length || filters.classes.length || filters.onlyGlobal || filters.onlyJapan || filters.onlyRR
+  const hasFilters = filters.query || filters.types.length || filters.classes.length || filters.minStars > 0
 
   return (
     <div className={styles.panel}>
-      <div className={styles.topBar}>
-        <div className={styles.searchWrap}>
+      <div className={styles.searchRow}>
+        <div className={styles.inputWrap}>
           <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          <input type="search" className={styles.searchInput}
-            placeholder="Buscar por nombre o #ID..."
+          <input
+            type="search"
+            className={styles.input}
+            placeholder={`Buscar entre ${totalCount.toLocaleString()} personajes…`}
             value={filters.query}
             onChange={e => onChange({ ...filters, query: e.target.value })}
           />
-          {filters.query && <button className={styles.clearBtn} onClick={() => onChange({ ...filters, query: '' })}>✕</button>}
+          {filters.query && (
+            <button className={styles.clearBtn} onClick={() => onChange({ ...filters, query: '' })} aria-label="Limpiar búsqueda">✕</button>
+          )}
         </div>
         <button
-          className={`${styles.filterToggle} ${open ? styles.filterToggleActive : ''}`}
-          onClick={() => setOpen(o => !o)}
+          className={`${styles.filterBtn} ${expanded ? styles.filterBtnActive : ''} ${hasFilters ? styles.filterBtnDot : ''}`}
+          onClick={() => setExpanded(e => !e)}
+          aria-expanded={expanded}
+          aria-label="Filtros avanzados"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
-          Filtros
-          {hasFilters && <span className={styles.filterDot} />}
         </button>
       </div>
 
-      {open && (
+      {expanded && (
         <div className={styles.filters}>
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Tipo</span>
             <div className={styles.chips}>
-              {UnitTypes.map(t => (
-                <button key={t}
+              {ALL_TYPES.map(t => (
+                <button
+                  key={t}
                   className={`${styles.chip} ${filters.types.includes(t) ? styles.chipActive : ''}`}
-                  style={filters.types.includes(t)
-                    ? { background: TYPE_COLORS[t], borderColor: TYPE_COLORS[t], color:'#fff' }
-                    : { borderColor: TYPE_COLORS[t] + '66' }}
-                  onClick={() => toggleType(t)}>{t}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>Rareza</span>
-            <div className={styles.chips}>
-              {Rarity.map(r => (
-                <button key={r}
-                  className={`${styles.chip} ${filters.stars.includes(r as UnitStar) ? styles.chipActive : ''}`}
-                  onClick={() => toggleStar(r as UnitStar)}>{r}★</button>
+                  style={{ '--chip-color': TYPE_COLORS[t] } as React.CSSProperties}
+                  onClick={() => toggle('types', t as never)}
+                >{t}</button>
               ))}
             </div>
           </div>
@@ -82,30 +81,48 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Clase</span>
             <div className={styles.chips}>
-              {UnitClasses.map(c => (
-                <button key={c}
-                  className={`${styles.chip} ${filters.classes.includes(c as UnitClass) ? styles.chipActive : ''}`}
-                  onClick={() => toggleClass(c as UnitClass)}>{c}</button>
+              {ALL_CLASSES.map(c => (
+                <button
+                  key={c}
+                  className={`${styles.chip} ${filters.classes.includes(c) ? styles.chipActive : ''}`}
+                  onClick={() => toggle('classes', c as never)}
+                >{c}</button>
               ))}
             </div>
           </div>
 
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>Pool</span>
-            <div className={styles.chips}>
-              <button className={`${styles.chip} ${filters.onlyGlobal ? styles.chipActive : ''}`} onClick={() => onChange({ ...filters, onlyGlobal: !filters.onlyGlobal })}>Global</button>
-              <button className={`${styles.chip} ${filters.onlyJapan ? styles.chipActive : ''}`} onClick={() => onChange({ ...filters, onlyJapan: !filters.onlyJapan })}>Japan</button>
-              <button className={`${styles.chip} ${filters.onlyRR ? styles.chipActive : ''}`} onClick={() => onChange({ ...filters, onlyRR: !filters.onlyRR })}>Rare Recruit</button>
+          <div className={styles.filterRow}>
+            <div className={styles.filterGroup} style={{ flex: 1 }}>
+              <span className={styles.filterLabel}>Mín. estrellas: {filters.minStars || 'cualquiera'}</span>
+              <input type="range" min={0} max={6} step={1} value={filters.minStars}
+                onChange={e => onChange({ ...filters, minStars: Number(e.target.value) })}
+                className={styles.slider} />
+            </div>
+            <div className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Ordenar</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <select className={styles.select} value={filters.sortBy}
+                  onChange={e => onChange({ ...filters, sortBy: e.target.value as SearchFilters['sortBy'] })}>
+                  <option value="id">ID</option>
+                  <option value="name">Nombre</option>
+                  <option value="atk">ATK</option>
+                  <option value="hp">HP</option>
+                  <option value="rcv">RCV</option>
+                </select>
+                <button className={styles.sortDirBtn}
+                  onClick={() => onChange({ ...filters, sortDir: filters.sortDir === 'asc' ? 'desc' : 'asc' })}>
+                  {filters.sortDir === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
             </div>
           </div>
 
           <div className={styles.filterFooter}>
-            <span className={styles.count}>{filteredCount} / {totalCount} personajes</span>
+            <span className={styles.resultCount}>{filteredCount.toLocaleString()} resultado{filteredCount !== 1 ? 's' : ''}</span>
             {hasFilters && <button className={styles.resetBtn} onClick={onReset}>Limpiar filtros</button>}
           </div>
         </div>
       )}
-      {!open && <p className={styles.countBar}>{filteredCount.toLocaleString()} personajes{hasFilters ? ' (filtrado)' : ''}</p>}
     </div>
   )
 }

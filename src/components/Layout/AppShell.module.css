@@ -1,0 +1,16 @@
+.shell { display: flex; flex-direction: column; min-height: 100dvh; }
+.header { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-4); background: var(--color-bg); border-bottom: 1px solid var(--color-divider); position: sticky; top: 0; z-index: 60; }
+.logo { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; color: var(--color-text); }
+.desktopNav { display: none; gap: var(--space-2); }
+@media (min-width: 768px) { .desktopNav { display: flex; } }
+.navLink { padding: var(--space-2) var(--space-4); border-radius: var(--radius-full); font-size: var(--text-sm); color: var(--color-text-muted); transition: all var(--transition); }
+.navLink:hover { color: var(--color-text); background: var(--color-surface-offset); }
+.navActive { color: var(--color-primary) !important; background: oklch(from var(--color-primary) l c h / 0.1) !important; font-weight: 600; }
+.main { flex: 1; padding-bottom: 72px; }
+@media (min-width: 768px) { .main { padding-bottom: 0; } }
+.bottomNav { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--color-bg); border-top: 1px solid var(--color-divider); display: flex; z-index: 60; }
+@media (min-width: 768px) { .bottomNav { display: none; } }
+.bottomTab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--color-text-faint); font-size: 10px; font-weight: 500; transition: color var(--transition); -webkit-tap-highlight-color: transparent; }
+.bottomTab:hover, .bottomTabActive { color: var(--color-primary); }
+.bottomTabActive svg { stroke: var(--color-primary); }
+.bottomTab span { font-family: var(--font-body); }

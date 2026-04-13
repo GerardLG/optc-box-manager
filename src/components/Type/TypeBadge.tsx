@@ -1,36 +1,36 @@
-import type { UnitType } from '../../models/units'
-
-const TYPE_COLORS: Record<string, string> = {
-  STR: '#e63946', DEX: '#2ecc71', QCK: '#3498db',
-  PSY: '#9b59b6', INT: '#f39c12', DUAL: '#7f8c8d', VS: '#16a085',
+interface Props {
+  type: string | string[]
+  size?: number
 }
 
-const TYPE_BG: Record<string, string> = {
-  STR: '#e6394620', DEX: '#2ecc7120', QCK: '#3498db20',
-  PSY: '#9b59b620', INT: '#f39c1220', DUAL: '#7f8c8d20', VS: '#16a08520',
+const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+  STR:  { bg: '#c0392b', text: '#fff' },
+  DEX:  { bg: '#27ae60', text: '#fff' },
+  QCK:  { bg: '#2980b9', text: '#fff' },
+  PSY:  { bg: '#8e44ad', text: '#fff' },
+  INT:  { bg: '#d35400', text: '#fff' },
+  DUAL: { bg: '#7f8c8d', text: '#fff' },
+  VS:   { bg: '#16a085', text: '#fff' },
 }
 
-interface Props { type: UnitType | UnitType[]; size?: number }
-
-export function TypeBadge({ type, size = 20 }: Props) {
+export function TypeBadge({ type, size = 18 }: Props) {
   const types = Array.isArray(type) ? type : [type]
   return (
-    <div style={{ display: 'flex', gap: 2 }}>
-      {types.map(t => (
-        <span key={t} style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: size, height: size,
-          background: TYPE_BG[t] ?? '#aaa2',
-          border: `1.5px solid ${TYPE_COLORS[t] ?? '#aaa'}`,
-          borderRadius: size / 4,
-          fontSize: Math.max(8, size * 0.38),
-          fontWeight: 800,
-          color: TYPE_COLORS[t] ?? '#aaa',
-          letterSpacing: '-0.05em',
-        }}>
-          {t.slice(0, 3)}
-        </span>
-      ))}
-    </div>
+    <span style={{ display: 'inline-flex', gap: 3 }}>
+      {types.map((t, i) => {
+        const c = TYPE_COLORS[t] ?? { bg: '#555', text: '#fff' }
+        return (
+          <span key={i} style={{
+            background: c.bg, color: c.text,
+            fontSize: size * 0.7,
+            fontWeight: 700,
+            padding: `1px ${size * 0.35}px`,
+            borderRadius: 4,
+            lineHeight: 1.4,
+            letterSpacing: 0.5,
+          }}>{t}</span>
+        )
+      })}
+    </span>
   )
 }

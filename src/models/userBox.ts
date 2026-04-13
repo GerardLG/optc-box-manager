@@ -1,23 +1,23 @@
 import type { ExtendedUnit } from './units'
 
-export interface UserUnitLevel {
-  lvl: number
-  enhancedMaxLevel: boolean
-  limitLevel: boolean
-}
-
-export interface UserUnitCC {
-  hp: number
-  atk: number
-  rcv: number
-}
-
 export interface UserUnit {
   id: string
   unit: ExtendedUnit
-  level: UserUnitLevel
-  cc: UserUnitCC
+  level: {
+    lvl: number
+    limitLvl?: number
+  }
+  cc: {
+    hp: number
+    atk: number
+    rcv: number
+  }
+  limitBreak?: {
+    lvl: number
+    support: number
+  }
+  support?: boolean
+  ink?: boolean
+  notes?: string
+  createdAt: number
 }
-
-export type UserBox = UserUnit[]
-export type UserUnitBulkEdit = Partial<Pick<UserUnit, 'level' | 'cc'>>
