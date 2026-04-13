@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173 },
+  base: '/optc-box-manager/',
   build: { target: 'esnext', outDir: 'dist' },
 })

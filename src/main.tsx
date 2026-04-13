@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/global.css'
 
-// Apply saved theme immediately to avoid flash
+// Apply saved theme immediately to avoid FOUC
 ;(function () {
   try {
     const s = localStorage.getItem('optc_settings_v1')
@@ -13,9 +13,18 @@ import './styles/global.css'
   } catch { /* ignore */ }
 })()
 
+// Handle SPA redirect from 404.html
+;(function () {
+  const params = new URLSearchParams(window.location.search)
+  const redirect = params.get('redirect')
+  if (redirect) {
+    window.history.replaceState(null, '', '/optc-box-manager' + redirect)
+  }
+})()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/optc-box-manager">
       <App />
     </BrowserRouter>
   </React.StrictMode>

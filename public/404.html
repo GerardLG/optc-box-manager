@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>OPTC Box Manager</title>
+  <script>
+    // SPA fallback for GitHub Pages: redirect 404 to index with hash
+    const path = window.location.pathname
+    const base = '/optc-box-manager'
+    const route = path.replace(base, '') || '/'
+    window.location.replace(base + '/?redirect=' + encodeURIComponent(route))
+  </script>
+</head>
+<body></body>
+</html>
