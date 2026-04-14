@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useUnits } from '../../hooks/useUnits'
 import { useUserBox } from '../../hooks/useUserBox'
 import { UnitImage } from '../../components/Image'
 import { TypeBadge } from '../../components/Type'
+import { parseCaptainAbility, getRecommendedTeam } from '../../services/captainAnalyzer'
 import type { UserUnit } from '../../models/userBox'
 import type { ExtendedUnit } from '../../models/units'
 import styles from './Detail.module.css'
@@ -16,7 +17,21 @@ export default function Detail() {
 
   const unit = units.find(u => u.id === Number(id))
   const userUnit = box.find(u => u.unit.id === Number(id))
-  const [tab, setTab] = useState<'info' | 'skills' | 'progress'>('info')
+  const [tab, setTab] = useState<'info' | 'skills' | 'team' | 'progress'>('info')
+
+  const boxIds = useMemo(() => new Set(box.map(u => u.unit.id)), [box])
+
+  const teamRecs = useMemo(() => {
+    if (!unit || tab !== 'team') return []
+    return getRecommendedTeam(unit, units, boxIds, 12)
+  }, [unit, units, boxIds, tab])
+
+  const captainCondition = useMemo(() => {
+    if (!unit?.detail?.captain || typeof unit.detail.captain !== 'string') return null
+    const c = parseCaptainAbility(unit.detail.captain)
+    if (!c.isUniversal && c.types.length === 0 && c.classes.length === 0 && c.families.length === 0) return null
+    return c
+  }, [unit])
 
   if (!unit) return (
     <div className={styles.notFound}>
@@ -78,14 +93,15 @@ export default function Detail() {
       </div>
 
       <div className={styles.tabs}>
-        {(['info', 'skills', 'progress'] as const).map(t => (
+        {(['info', 'skills', 'team', 'progress'] as const).map(t => (
           <button
             key={t}
             className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'info' && 'Estadísticas'}
-            {t === 'skills' && 'Habilidades'}
+            {t === 'info'     && 'Estadísticas'}
+            {t === 'skills'   && 'Habilidades'}
+            {t === 'team'     && '👥 Team'}
             {t === 'progress' && 'Mi progreso'}
           </button>
         ))}
@@ -177,6 +193,15 @@ export default function Detail() {
           </div>
         )}
 
+        {tab === 'team' && (
+          <TeamTab
+            unit={unit}
+            recs={teamRecs}
+            captainCondition={captainCondition}
+            onNavigate={(id) => navigate(`/detail/${id}`)}
+          />
+        )}
+
         {tab === 'progress' && (
           <div>
             {!isOwned ? (
@@ -193,6 +218,135 @@ export default function Detail() {
         )}
       </div>
     </div>
+  )
+}
+
+function TeamTab({
+  unit, recs, captainCondition, onNavigate
+}: {
+  unit: ExtendedUnit
+  recs: { unit: ExtendedUnit; score: number; inBox: boolean }[]
+  captainCondition: ReturnType<typeof parseCaptainAbility> | null
+  onNavigate: (id: number) => void
+}) {
+  const typeColor: Record<string, string> = {
+    STR: '#e63946', DEX: '#2ecc71', QCK: '#3498db',
+    PSY: '#9b59b6', INT: '#f39c12', DUAL: '#7f8c8d', VS: '#16a085'
+  }
+
+  if (!unit.detail?.captain || typeof unit.detail.captain !== 'string' || !unit.detail.captain) {
+    return (
+      <div className={styles.teamEmpty}>
+        <span style={{ fontSize: '2.5rem' }}>⚓</span>
+        <p>Este personaje no tiene habilidad de capitán disponible.</p>
+      </div>
+    )
+  }
+
+  if (!captainCondition) {
+    return (
+      <div className={styles.teamEmpty}>
+        <span style={{ fontSize: '2.5rem' }}>🔍</span>
+        <p>No se pudo detectar una condición clara en la habilidad de capitán.</p>
+        <p className={styles.teamEmptyNote}>{unit.detail.captain}</p>
+      </div>
+    )
+  }
+
+  const boxRecs  = recs.filter(r => r.inBox)
+  const allRecs  = recs.filter(r => !r.inBox)
+
+  // Build tag chips for the detected condition
+  const tags: string[] = [
+    ...(captainCondition.isUniversal ? ['Todos los personajes'] : []),
+    ...captainCondition.types.map(t => `Tipo ${t}`),
+    ...captainCondition.classes,
+    ...captainCondition.families,
+  ]
+
+  return (
+    <div className={styles.teamSection}>
+      {/* Captain ability summary */}
+      <div className={styles.teamCaptainBox}>
+        <span className={styles.teamCaptainLabel}>⚓ Habilidad detectada</span>
+        <p className={styles.teamCaptainText}>{unit.detail.captain}</p>
+        <div className={styles.teamTags}>
+          {tags.map(tag => (
+            <span key={tag} className={styles.teamTag}>{tag}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Box recommendations */}
+      {boxRecs.length > 0 && (
+        <>
+          <h2 className={styles.sectionTitle}>✅ En tu box ({boxRecs.length})</h2>
+          <div className={styles.teamGrid}>
+            {boxRecs.map(({ unit: u }) => (
+              <TeamCard
+                key={u.id} unit={u}
+                typeColor={typeColor}
+                inBox
+                onClick={() => onNavigate(u.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* All-units recommendations */}
+      {allRecs.length > 0 && (
+        <>
+          <h2 className={styles.sectionTitle}>🌐 Otros compatibles</h2>
+          <div className={styles.teamGrid}>
+            {allRecs.map(({ unit: u }) => (
+              <TeamCard
+                key={u.id} unit={u}
+                typeColor={typeColor}
+                inBox={false}
+                onClick={() => onNavigate(u.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {recs.length === 0 && (
+        <div className={styles.teamEmpty}>
+          <span style={{ fontSize: '2.5rem' }}>🏴‍☠️</span>
+          <p>No se encontraron personajes compatibles.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TeamCard({
+  unit, typeColor, inBox, onClick
+}: {
+  unit: ExtendedUnit
+  typeColor: Record<string, string>
+  inBox: boolean
+  onClick: () => void
+}) {
+  const mainType = Array.isArray(unit.type) ? unit.type[0] : unit.type
+  const color = typeColor[mainType] ?? '#4f98a3'
+  const classes = (Array.isArray(unit.class) ? (unit.class as string[]).flat() : [String(unit.class)]).join(' / ')
+
+  return (
+    <button
+      className={`${styles.teamCard} ${inBox ? styles.teamCardInBox : ''}`}
+      style={{ '--type-color': color } as React.CSSProperties}
+      onClick={onClick}
+      title={unit.name}
+    >
+      <div className={styles.teamCardImgWrap}>
+        <UnitImage unitId={unit.id} name={unit.name} size={64} className={styles.teamCardImg} />
+        {inBox && <span className={styles.teamCardBadge}>✓</span>}
+      </div>
+      <span className={styles.teamCardName}>{unit.name}</span>
+      <span className={styles.teamCardClass}>{classes}</span>
+    </button>
   )
 }
 
