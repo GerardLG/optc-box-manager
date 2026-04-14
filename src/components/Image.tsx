@@ -15,9 +15,10 @@ function formatId(id: number): string {
 function buildUrls(id: number): string[] {
   const fid = formatId(id)
   return [
-    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/public/img/thumbnail/${fid}.png`,
-    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/public/img/thumbnail/${fid}_1.png`,
-    `https://optc-db.github.io/img/thumbnail/${fid}.png`,
+    // CDN principal — GitHub Pages del repo oficial
+    `https://optc-db.github.io/thumbnail/${fid}.png`,
+    // Fallback: raw de GitHub (más lento pero siempre disponible)
+    `https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/thumbnail/${fid}.png`,
   ]
 }
 
