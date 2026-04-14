@@ -15,10 +15,10 @@ function formatId(id: number): string {
 function buildUrls(id: number): string[] {
   const fid = formatId(id)
   return [
-    // CDN principal — GitHub Pages del repo oficial
-    `https://optc-db.github.io/thumbnail/${fid}.png`,
-    // Fallback: raw de GitHub (más lento pero siempre disponible)
-    `https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/thumbnail/${fid}.png`,
+    // Servidor oficial OPTC Global
+    `https://onepiece-treasurecruise.com/en/wp-content/uploads/sites/2/images/f${fid}.png`,
+    // Servidor oficial OPTC Japón (fallback)
+    `https://onepiece-treasurecruise.com/wp-content/uploads/sites/1/images/f${fid}.png`,
   ]
 }
 
