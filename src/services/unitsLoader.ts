@@ -4,27 +4,18 @@ const BASE = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master
 const UNITS_URL   = `${BASE}/units.js`
 const DETAILS_URL = `${BASE}/details.js`
 
-// optc-db serves JS files like: window.units = [[...], ...]
-// The regex accepts both "var x =" and "window.x =" patterns
-function extractArray(js: string, varName: string): unknown[] {
-  const pattern = new RegExp(`(?:var\\s+${varName}|window\.${varName})\\s*=\\s*(\\[)`)
-  const match = pattern.exec(js)
-  if (!match || match.index === undefined) throw new Error(`No se encontró '${varName}' en el JS`)
-
-  // Find the position of the '[' that opens the array
-  const start = js.indexOf('[', match.index)
-
-  // Walk forward matching brackets to find the end of the array
-  let depth = 0
-  let end = start
-  for (let i = start; i < js.length; i++) {
-    if (js[i] === '[') depth++
-    else if (js[i] === ']') {
-      depth--
-      if (depth === 0) { end = i; break }
-    }
-  }
-  return JSON.parse(js.slice(start, end + 1))
+// optc-db files are real JS (single quotes, undefined, functions, '5+' strings…)
+// JSON.parse cannot handle them — we execute the script in an isolated scope
+// using new Function so window/global is never polluted.
+function execJS(js: string, varName: string): unknown[] {
+  const fn = new Function(`
+    var window = {};
+    ${js}
+    if (typeof window.${varName} !== 'undefined') return window.${varName};
+    if (typeof ${varName} !== 'undefined') return ${varName};
+    throw new Error("No se encontró '${varName}' en el JS");
+  `)
+  return fn() as unknown[]
 }
 
 export async function fetchAllUnits(
@@ -50,9 +41,9 @@ export async function fetchAllUnits(
   onProgress?.(60)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawUnits   = extractArray(unitsText,   'units')   as any[]
+  const rawUnits   = execJS(unitsText,   'units')   as any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawDetails = extractArray(detailsText, 'details') as any[]
+  const rawDetails = execJS(detailsText, 'details') as any[]
 
   onProgress?.(80)
 
