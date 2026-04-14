@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import type { ExtendedUnit, UnitType } from '../models/units'
+import { normalizeType } from '../services/unitsLoader'
 
 export interface SearchFilters {
   query:    string
@@ -19,21 +20,12 @@ const DEFAULT: SearchFilters = {
   sortDir:  'asc',
 }
 
-/** Devuelve todos los tipos de un personaje como array plano */
-function getUnitTypes(unit: ExtendedUnit): UnitType[] {
-  if (!unit.type) return []
-  // type puede ser string, string[], o array anidado
-  const raw = Array.isArray(unit.type) ? unit.type.flat() : [unit.type]
-  return raw as UnitType[]
-}
-
 export function useSearch(units: ExtendedUnit[]) {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT)
 
   const results = useMemo(() => {
     let list = units
 
-    // --- Búsqueda por texto ---
     if (filters.query.trim()) {
       const q = filters.query.toLowerCase()
       list = list.filter(u =>
@@ -43,30 +35,27 @@ export function useSearch(units: ExtendedUnit[]) {
       )
     }
 
-    // --- Filtro por tipo ---
-    // Un personaje DUAL tiene type = ["DUAL", "STR", "DEX"].
-    // Filtramos si CUALQUIERA de los tipos del personaje está en la selección.
     if (filters.types.length) {
       list = list.filter(u => {
-        const unitTypes = getUnitTypes(u)
+        // normalizeType maneja string | array | objeto
+        const unitTypes = normalizeType(u.type)
         return filters.types.some(selected => unitTypes.includes(selected))
       })
     }
 
-    // --- Filtro por clase ---
     if (filters.classes.length) {
       list = list.filter(u => {
-        const classes = (Array.isArray(u.class) ? (u.class as string[]).flat() : [String(u.class)])
+        const classes = (Array.isArray(u.class)
+          ? (u.class as string[]).flat()
+          : [String(u.class)])
         return filters.classes.some(c => classes.includes(c))
       })
     }
 
-    // --- Filtro por estrellas mínimas ---
     if (filters.minStars > 0) {
       list = list.filter(u => Number(u.stars) >= filters.minStars)
     }
 
-    // --- Ordenación ---
     list = [...list].sort((a, b) => {
       let diff = 0
       if (filters.sortBy === 'id')   diff = a.id - b.id

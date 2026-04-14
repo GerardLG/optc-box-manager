@@ -1,4 +1,4 @@
-import type { ExtendedUnit } from '../models/units'
+import type { ExtendedUnit, UnitType } from '../models/units'
 
 const BASE         = 'https://raw.githubusercontent.com/optc-db/optc-db.github.io/master/common/data'
 const DETAILS_BASE = 'https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/common/data'
@@ -7,22 +7,39 @@ const UNITS_URL     = `${BASE}/units.js`
 const COOLDOWNS_URL = `${BASE}/cooldowns.js`
 const DETAILS_URL   = `${DETAILS_BASE}/details.js`
 
-// optc-db files are real JS -- execute in isolated scope via new Function
 function execJS<T>(js: string, varName: string): T {
   const fn = new Function(`
     var window = {};
     ${js}
     if (typeof window.${varName} !== 'undefined') return window.${varName};
     if (typeof ${varName} !== 'undefined') return ${varName};
-    throw new Error("No se encontró '${varName}' en el JS");
+    throw new Error("No se encontr\u00f3 '${varName}' en el JS");
   `)
   return fn() as T
 }
 
-function isPlaceholder(row: unknown[]): boolean {
-  const name = row[0]
-  const type = row[1]
-  return !name || name === '' || type === 'Type' || type === null
+/**
+ * Normaliza el campo type de optc-db a un array de UnitType.
+ * Puede llegar como:
+ *   - string:  "STR"
+ *   - array:   ["DUAL", "STR", "DEX"]
+ *   - objeto:  { "type1": "DUAL", "type2": "STR" }  <-- caso DUAL/VS en optc-db
+ */
+export function normalizeType(raw: unknown): UnitType[] {
+  if (!raw) return []
+  if (typeof raw === 'string') return [raw as UnitType]
+  if (Array.isArray(raw)) {
+    return (raw as unknown[]).flatMap(v =>
+      typeof v === 'string' ? [v as UnitType] : normalizeType(v)
+    )
+  }
+  if (typeof raw === 'object') {
+    // { type1: "DUAL", type2: "STR" } o cualquier objeto con valores string
+    return Object.values(raw as Record<string, unknown>)
+      .filter((v): v is string => typeof v === 'string')
+      .map(v => v as UnitType)
+  }
+  return []
 }
 
 function extractCaptainText(captain: unknown): string {
@@ -67,7 +84,7 @@ export async function fetchAllUnits(
   onProgress?.(60)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawUnits     = execJS<any[]>(unitsText,     'units')
+  const rawUnits     = execJS<any[]>(unitsText, 'units')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawCooldowns = execJS<([number, number] | null)[]>(cooldownsText, 'cooldowns')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,10 +99,13 @@ export async function fetchAllUnits(
       const cooldown = rawCooldowns[idx] ?? undefined
       const d        = rawDetails[id] ?? {}
 
+      // Normalizar tipos a array plano siempre
+      const types = normalizeType(row[1])
+
       return {
         id,
         name:     row[0] ?? `Unit #${id}`,
-        type:     row[1],
+        type:     types.length === 1 ? types[0] : types,
         class:    row[2],
         stars:    Number(row[3]) || 0,
         cost:     row[4] ?? 0,
@@ -117,7 +137,11 @@ export async function fetchAllUnits(
         },
       } as ExtendedUnit
     })
-    .filter((u: ExtendedUnit) => u.name && u.name !== '' && u.type !== ('Type' as never))
+    .filter((u: ExtendedUnit) => {
+      if (!u.name || u.name === '') return false
+      const types = normalizeType(u.type)
+      return types.length > 0 && types[0] !== ('Type' as UnitType)
+    })
 
   onProgress?.(100)
   return result
