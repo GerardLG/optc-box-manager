@@ -1,35 +1,63 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import styles from './Layout.module.css'
 
+function getInitialTheme(): 'light' | 'dark' {
+  try {
+    const stored = (window as any).__optcTheme
+    if (stored === 'light' || stored === 'dark') return stored
+  } catch {}
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 export function Layout() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    ;(window as any).__optcTheme = theme
+  }, [theme])
+
+  function toggleTheme() {
+    setTheme(t => t === 'dark' ? 'light' : 'dark')
+  }
+
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.logo}>
-          {/* Sombrero de paja de Luffy */}
           <svg width="34" height="28" viewBox="0 0 68 52" fill="none" aria-label="OPTC Box Manager">
-            {/* Ala izquierda */}
             <path d="M2 36 C8 28, 18 26, 26 28 L22 38 C14 38, 6 40, 2 36Z"
               fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
-            {/* Ala derecha */}
             <path d="M66 36 C60 28, 50 26, 42 28 L46 38 C54 38, 62 40, 66 36Z"
               fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
-            {/* Copa del sombrero */}
             <path d="M20 30 C20 12, 48 12, 48 30 L46 34 C44 36, 24 36, 22 34 Z"
               fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
-            {/* Banda roja */}
             <path d="M22 33 C26 30, 42 30, 46 33"
               stroke="#cc2222" strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* Borde del ala — línea continua */}
             <path d="M2 36 C10 42, 28 42, 34 40 C40 42, 58 42, 66 36"
               stroke="var(--color-primary-hover)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           </svg>
           <span>OPTC Box</span>
         </div>
-        <button data-theme-toggle className={styles.themeToggle} aria-label="Cambiar tema">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
+
+        <button
+          onClick={toggleTheme}
+          className={styles.themeToggle}
+          aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+        >
+          {theme === 'dark' ? (
+            /* Sol — tema claro */
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          ) : (
+            /* Luna — tema oscuro */
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          )}
         </button>
       </header>
 
