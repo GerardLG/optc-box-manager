@@ -19,27 +19,38 @@ function execJS<T>(js: string, varName: string): T {
 }
 
 /**
- * Normaliza el campo type de optc-db a un array de UnitType.
- * Puede llegar como:
- *   - string:  "STR"
- *   - array:   ["DUAL", "STR", "DEX"]
- *   - objeto:  { "type1": "DUAL", "type2": "STR" }  <-- caso DUAL/VS en optc-db
+ * Devuelve los tipos base de un personaje como array plano de strings.
+ * En optc-db el campo type puede ser:
+ *   - "STR"          -> personaje normal
+ *   - ["STR","PSY"] -> personaje DUAL o VS (dos tipos)
+ * No existe "DUAL" ni "VS" como valor de tipo en los datos originales.
  */
-export function normalizeType(raw: unknown): UnitType[] {
+export function getBaseTypes(raw: unknown): string[] {
   if (!raw) return []
-  if (typeof raw === 'string') return [raw as UnitType]
+  if (typeof raw === 'string') return [raw]
   if (Array.isArray(raw)) {
     return (raw as unknown[]).flatMap(v =>
-      typeof v === 'string' ? [v as UnitType] : normalizeType(v)
+      typeof v === 'string' ? [v] : (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
     )
   }
-  if (typeof raw === 'object') {
-    // { type1: "DUAL", type2: "STR" } o cualquier objeto con valores string
-    return Object.values(raw as Record<string, unknown>)
-      .filter((v): v is string => typeof v === 'string')
-      .map(v => v as UnitType)
-  }
   return []
+}
+
+/**
+ * Detecta si un personaje es DUAL (type es array de 2 tipos)
+ * o VS (name contiene " VS ").
+ * Devuelve los UnitType[] a usar para filtrado, incluyendo "DUAL" o "VS" si aplica.
+ */
+export function getFilterTypes(raw: unknown, name: string): UnitType[] {
+  const base = getBaseTypes(raw)
+  const isArray = Array.isArray(raw) && (raw as unknown[]).filter(v => typeof v === 'string').length >= 2
+  const isVS   = / vs /i.test(name)
+  const isDual = isArray && !isVS
+
+  const result = new Set<string>(base)
+  if (isVS)   result.add('VS')
+  if (isDual) result.add('DUAL')
+  return [...result] as UnitType[]
 }
 
 function extractCaptainText(captain: unknown): string {
@@ -98,14 +109,22 @@ export async function fetchAllUnits(
       const id       = idx + 1
       const cooldown = rawCooldowns[idx] ?? undefined
       const d        = rawDetails[id] ?? {}
+      const name     = row[0] ?? `Unit #${id}`
+      const rawType  = row[1]
 
-      // Normalizar tipos a array plano siempre
-      const types = normalizeType(row[1])
+      // Guardamos los tipos de filtrado (incluye DUAL/VS si aplica)
+      const filterTypes = getFilterTypes(rawType, name)
+      // Para mostrar en UI usamos el primer tipo base
+      const baseTypes   = getBaseTypes(rawType)
+      const displayType: UnitType | UnitType[] = filterTypes.length === 1
+        ? filterTypes[0] as UnitType
+        : filterTypes as UnitType[]
 
       return {
         id,
-        name:     row[0] ?? `Unit #${id}`,
-        type:     types.length === 1 ? types[0] : types,
+        name,
+        type:     displayType,
+        _baseTypes: baseTypes,   // tipos originales sin DUAL/VS
         class:    row[2],
         stars:    Number(row[3]) || 0,
         cost:     row[4] ?? 0,
@@ -139,8 +158,8 @@ export async function fetchAllUnits(
     })
     .filter((u: ExtendedUnit) => {
       if (!u.name || u.name === '') return false
-      const types = normalizeType(u.type)
-      return types.length > 0 && types[0] !== ('Type' as UnitType)
+      const types = Array.isArray(u.type) ? u.type : [u.type]
+      return types.length > 0 && !types.includes('Type' as UnitType)
     })
 
   onProgress?.(100)

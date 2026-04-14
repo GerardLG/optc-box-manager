@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import type { ExtendedUnit, UnitType } from '../models/units'
-import { normalizeType } from '../services/unitsLoader'
 
 export interface SearchFilters {
   query:    string
@@ -20,6 +19,15 @@ const DEFAULT: SearchFilters = {
   sortDir:  'asc',
 }
 
+/** Extrae todos los tipos de un personaje (incluyendo DUAL/VS si los tiene) */
+function getUnitFilterTypes(unit: ExtendedUnit): string[] {
+  const raw = unit.type
+  if (!raw) return []
+  if (typeof raw === 'string') return [raw]
+  if (Array.isArray(raw)) return (raw as string[]).flat().filter(Boolean)
+  return []
+}
+
 export function useSearch(units: ExtendedUnit[]) {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT)
 
@@ -37,8 +45,7 @@ export function useSearch(units: ExtendedUnit[]) {
 
     if (filters.types.length) {
       list = list.filter(u => {
-        // normalizeType maneja string | array | objeto
-        const unitTypes = normalizeType(u.type)
+        const unitTypes = getUnitFilterTypes(u)
         return filters.types.some(selected => unitTypes.includes(selected))
       })
     }
