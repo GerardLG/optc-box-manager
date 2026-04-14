@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ExtendedUnit } from '../models/units'
 import { fetchAllUnits } from '../services/unitsLoader'
+import { hydrateBox } from './useUserBox'
 
 interface State {
   units: ExtendedUnit[]
@@ -15,17 +16,21 @@ let _promise: Promise<ExtendedUnit[]> | null = null
 
 export function useUnits() {
   const [state, setState] = useState<State>({
-    units: _cache ?? [],
-    isLoading: !_cache,
+    units:           _cache ?? [],
+    isLoading:       !_cache,
     loadingProgress: _cache ? 100 : 0,
-    error: null,
+    error:           null,
   })
 
   const mounted = useRef(true)
 
   useEffect(() => {
     mounted.current = true
-    if (_cache) return
+    if (_cache) {
+      // Units already loaded — ensure box is hydrated
+      hydrateBox(_cache)
+      return
+    }
 
     if (!_promise) {
       _promise = fetchAllUnits(pct => {
@@ -36,7 +41,9 @@ export function useUnits() {
     _promise
       .then(units => {
         _cache = units
-        if (mounted.current) setState({ units, isLoading: false, loadingProgress: 100, error: null })
+        hydrateBox(units)   // <-- hydrate box with fresh detail data
+        if (mounted.current)
+          setState({ units, isLoading: false, loadingProgress: 100, error: null })
       })
       .catch(err => {
         _promise = null
