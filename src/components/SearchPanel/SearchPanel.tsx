@@ -108,6 +108,7 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
                   <option value="atk">ATK</option>
                   <option value="hp">HP</option>
                   <option value="rcv">RCV</option>
+                  <option value="cost">Coste</option>
                 </select>
                 <button className={styles.sortDirBtn}
                   onClick={() => onChange({ ...filters, sortDir: filters.sortDir === 'asc' ? 'desc' : 'asc' })}>

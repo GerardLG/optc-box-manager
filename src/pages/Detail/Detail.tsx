@@ -9,6 +9,8 @@ import type { UserUnit } from '../../models/userBox'
 import type { ExtendedUnit } from '../../models/units'
 import styles from './Detail.module.css'
 
+type Tab = 'info' | 'skills' | 'evo' | 'team' | 'progress'
+
 export default function Detail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -17,7 +19,7 @@ export default function Detail() {
 
   const unit = units.find(u => u.id === Number(id))
   const userUnit = box.find(u => u.unit.id === Number(id))
-  const [tab, setTab] = useState<'info' | 'skills' | 'team' | 'progress'>('info')
+  const [tab, setTab] = useState<Tab>('info')
 
   const boxIds = useMemo(() => new Set(box.map(u => u.unit.id)), [box])
 
@@ -33,6 +35,50 @@ export default function Detail() {
     return c
   }, [unit])
 
+  // Build evolution chain: find all ancestors + descendants by following evolution links
+  const evoChain = useMemo(() => {
+    if (!unit || !units.length) return []
+
+    const visited = new Set<number>()
+    const chain: number[] = []
+
+    // Walk backwards: find who evolves INTO this unit
+    function findAncestors(targetId: number) {
+      const parent = units.find(u => {
+        if (!u.evolution) return false
+        const evos = Array.isArray(u.evolution.evolution)
+          ? u.evolution.evolution
+          : [u.evolution.evolution]
+        return evos.includes(targetId)
+      })
+      if (parent && !visited.has(parent.id)) {
+        visited.add(parent.id)
+        findAncestors(parent.id)
+        chain.push(parent.id)
+      }
+    }
+
+    // Walk forward: follow evolution targets
+    function followEvolutions(currentId: number) {
+      if (visited.has(currentId)) return
+      visited.add(currentId)
+      chain.push(currentId)
+      const current = units.find(u => u.id === currentId)
+      if (!current?.evolution) return
+      const targets = Array.isArray(current.evolution.evolution)
+        ? current.evolution.evolution
+        : [current.evolution.evolution]
+      targets.forEach(t => followEvolutions(t))
+    }
+
+    findAncestors(unit.id)
+    followEvolutions(unit.id)
+
+    return chain
+      .map(eid => units.find(u => u.id === eid))
+      .filter(Boolean) as ExtendedUnit[]
+  }, [unit, units])
+
   if (!unit) return (
     <div className={styles.notFound}>
       <p>{units.length === 0 ? 'Cargando...' : 'Personaje no encontrado'}</p>
@@ -47,6 +93,14 @@ export default function Detail() {
     PSY: '#9b59b6', INT: '#f39c12', DUAL: '#7f8c8d', VS: '#16a085'
   }
   const mainType = Array.isArray(unit.type) ? unit.type[0] : unit.type
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: 'info',     label: 'Estadísticas' },
+    { key: 'skills',   label: 'Habilidades' },
+    { key: 'evo',      label: '\u{1F9EC} Evolución' },
+    { key: 'team',     label: '\uD83D\uDC65 Team' },
+    { key: 'progress', label: 'Mi progreso' },
+  ]
 
   return (
     <div className={styles.page}>
@@ -93,17 +147,12 @@ export default function Detail() {
       </div>
 
       <div className={styles.tabs}>
-        {(['info', 'skills', 'team', 'progress'] as const).map(t => (
+        {TABS.map(({ key, label }) => (
           <button
-            key={t}
-            className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
-            onClick={() => setTab(t)}
-          >
-            {t === 'info'     && 'Estadísticas'}
-            {t === 'skills'   && 'Habilidades'}
-            {t === 'team'     && '👥 Team'}
-            {t === 'progress' && 'Mi progreso'}
-          </button>
+            key={key}
+            className={`${styles.tab} ${tab === key ? styles.tabActive : ''}`}
+            onClick={() => setTab(key)}
+          >{label}</button>
         ))}
       </div>
 
@@ -193,6 +242,15 @@ export default function Detail() {
           </div>
         )}
 
+        {tab === 'evo' && (
+          <EvoTab
+            unit={unit}
+            chain={evoChain}
+            boxIds={boxIds}
+            onNavigate={id => { navigate(`/detail/${id}`) }}
+          />
+        )}
+
         {tab === 'team' && (
           <TeamTab
             unit={unit}
@@ -220,6 +278,97 @@ export default function Detail() {
     </div>
   )
 }
+
+// ──────────────────────── Evo Tab ────────────────────────
+
+function EvoTab({
+  unit, chain, boxIds, onNavigate
+}: {
+  unit: ExtendedUnit
+  chain: ExtendedUnit[]
+  boxIds: Set<number>
+  onNavigate: (id: number) => void
+}) {
+  const typeColor: Record<string, string> = {
+    STR: '#e63946', DEX: '#2ecc71', QCK: '#3498db',
+    PSY: '#9b59b6', INT: '#f39c12', DUAL: '#7f8c8d', VS: '#16a085'
+  }
+
+  if (chain.length <= 1) {
+    return (
+      <div className={styles.teamEmpty}>
+        <span style={{ fontSize: '2.5rem' }}>🧬</span>
+        <p>Este personaje no tiene cadena de evolución disponible.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.evoSection}>
+      <p className={styles.evoHint}>💡 Pulsa en cualquier forma para ir a su ficha</p>
+      <div className={styles.evoChain}>
+        {chain.map((evo, idx) => {
+          const isCurrent = evo.id === unit.id
+          const inBox     = boxIds.has(evo.id)
+          const mainType  = Array.isArray(evo.type) ? evo.type[0] : evo.type
+          const color     = typeColor[mainType] ?? '#4f98a3'
+          return (
+            <>
+              {idx > 0 && (
+                <div className={styles.evoArrow} key={`arrow-${idx}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </div>
+              )}
+              <button
+                key={evo.id}
+                className={`${styles.evoCard} ${isCurrent ? styles.evoCurrent : ''} ${inBox ? styles.evoInBox : ''}`}
+                style={{ '--type-color': color } as React.CSSProperties}
+                onClick={() => onNavigate(evo.id)}
+                title={evo.name}
+              >
+                <div className={styles.evoImgWrap}>
+                  <UnitImage unitId={evo.id} name={evo.name} size={72} className={styles.evoImg} />
+                  {inBox && <span className={styles.evoBadge}>✓</span>}
+                </div>
+                <span className={styles.evoName}>{evo.name}</span>
+                <span className={styles.evoStars}>{'\u2605'.repeat(Math.min(Number(evo.stars), 6))}</span>
+                {isCurrent && <span className={styles.evoCurrentLabel}>Actual</span>}
+              </button>
+            </>
+          )
+        })}
+      </div>
+
+      {/* Evolvers (materials needed) for current unit */}
+      {unit.evolution?.evolvers && unit.evolution.evolvers.length > 0 && (
+        <div className={styles.evolversSection}>
+          <h3 className={styles.sectionTitle}>Materiales de evolución</h3>
+          <div className={styles.evolversList}>
+            {unit.evolution.evolvers.map((evolver, i) => (
+              <div key={i} className={styles.evolverItem}>
+                {typeof evolver === 'number' ? (
+                  <button className={styles.evolverUnit} onClick={() => onNavigate(evolver)}>
+                    <UnitImage unitId={evolver} name={`#${evolver}`} size={52} className={styles.evolverImg} />
+                    <span className={styles.evolverId}>#{String(evolver).padStart(4,'0')}</span>
+                  </button>
+                ) : (
+                  <div className={styles.evolverSkull}>
+                    <span className={styles.evolverSkullIcon}>💀</span>
+                    <span className={styles.evolverSkullLabel}>{evolver}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ──────────────────────── Team Tab ────────────────────────
 
 function TeamTab({
   unit, recs, captainCondition, onNavigate
@@ -253,10 +402,9 @@ function TeamTab({
     )
   }
 
-  const boxRecs  = recs.filter(r => r.inBox)
-  const allRecs  = recs.filter(r => !r.inBox)
+  const boxRecs = recs.filter(r => r.inBox)
+  const allRecs = recs.filter(r => !r.inBox)
 
-  // Build tag chips for the detected condition
   const tags: string[] = [
     ...(captainCondition.isUniversal ? ['Todos los personajes'] : []),
     ...captainCondition.types.map(t => `Tipo ${t}`),
@@ -266,7 +414,6 @@ function TeamTab({
 
   return (
     <div className={styles.teamSection}>
-      {/* Captain ability summary */}
       <div className={styles.teamCaptainBox}>
         <span className={styles.teamCaptainLabel}>⚓ Habilidad detectada</span>
         <p className={styles.teamCaptainText}>{unit.detail.captain}</p>
@@ -277,35 +424,23 @@ function TeamTab({
         </div>
       </div>
 
-      {/* Box recommendations */}
       {boxRecs.length > 0 && (
         <>
           <h2 className={styles.sectionTitle}>✅ En tu box ({boxRecs.length})</h2>
           <div className={styles.teamGrid}>
             {boxRecs.map(({ unit: u }) => (
-              <TeamCard
-                key={u.id} unit={u}
-                typeColor={typeColor}
-                inBox
-                onClick={() => onNavigate(u.id)}
-              />
+              <TeamCard key={u.id} unit={u} typeColor={typeColor} inBox onClick={() => onNavigate(u.id)} />
             ))}
           </div>
         </>
       )}
 
-      {/* All-units recommendations */}
       {allRecs.length > 0 && (
         <>
           <h2 className={styles.sectionTitle}>🌐 Otros compatibles</h2>
           <div className={styles.teamGrid}>
             {allRecs.map(({ unit: u }) => (
-              <TeamCard
-                key={u.id} unit={u}
-                typeColor={typeColor}
-                inBox={false}
-                onClick={() => onNavigate(u.id)}
-              />
+              <TeamCard key={u.id} unit={u} typeColor={typeColor} inBox={false} onClick={() => onNavigate(u.id)} />
             ))}
           </div>
         </>
@@ -379,10 +514,10 @@ function ProgressEditor({
   unit: ExtendedUnit
   onUpdate: (u: UserUnit) => void
 }) {
-  const [level, setLevel]   = useState(userUnit.level.lvl)
-  const [ccHp,  setCcHp]    = useState(userUnit.cc.hp)
-  const [ccAtk, setCcAtk]   = useState(userUnit.cc.atk)
-  const [ccRcv, setCcRcv]   = useState(userUnit.cc.rcv)
+  const [level, setLevel] = useState(userUnit.level.lvl)
+  const [ccHp,  setCcHp]  = useState(userUnit.cc.hp)
+  const [ccAtk, setCcAtk] = useState(userUnit.cc.atk)
+  const [ccRcv, setCcRcv] = useState(userUnit.cc.rcv)
 
   return (
     <div className={styles.progressEditor}>

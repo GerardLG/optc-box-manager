@@ -2,21 +2,21 @@ import { useState, useMemo } from 'react'
 import type { ExtendedUnit, UnitType } from '../models/units'
 
 export interface SearchFilters {
-  query: string
-  types: UnitType[]
+  query:   string
+  types:   UnitType[]
   classes: string[]
   minStars: number
-  sortBy: 'id' | 'name' | 'atk' | 'hp' | 'rcv'
+  sortBy:  'id' | 'name' | 'atk' | 'hp' | 'rcv' | 'cost'
   sortDir: 'asc' | 'desc'
 }
 
 const DEFAULT: SearchFilters = {
-  query: '',
-  types: [],
-  classes: [],
+  query:    '',
+  types:    [],
+  classes:  [],
   minStars: 0,
-  sortBy: 'id',
-  sortDir: 'asc',
+  sortBy:   'id',
+  sortDir:  'asc',
 }
 
 export function useSearch(units: ExtendedUnit[]) {
@@ -57,8 +57,9 @@ export function useSearch(units: ExtendedUnit[]) {
       if (filters.sortBy === 'id')   diff = a.id - b.id
       if (filters.sortBy === 'name') diff = a.name.localeCompare(b.name)
       if (filters.sortBy === 'atk')  diff = a.maxATK - b.maxATK
-      if (filters.sortBy === 'hp')   diff = a.maxHP - b.maxHP
+      if (filters.sortBy === 'hp')   diff = a.maxHP  - b.maxHP
       if (filters.sortBy === 'rcv')  diff = a.maxRCV - b.maxRCV
+      if (filters.sortBy === 'cost') diff = a.cost   - b.cost
       return filters.sortDir === 'asc' ? diff : -diff
     })
 

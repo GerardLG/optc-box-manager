@@ -13,7 +13,18 @@
 }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--color-primary); }
 .card:active { transform: scale(0.97); }
-.card.owned { border-color: oklch(from var(--color-primary) l c h / 0.5); background: oklch(from var(--color-primary) l c h / 0.06); }
+
+/* Owned: teal border + subtle glow + tinted background */
+.card.owned {
+  border-color: oklch(from var(--color-primary) l c h / 0.6);
+  background: oklch(from var(--color-primary) l c h / 0.06);
+  box-shadow: 0 0 0 1px oklch(from var(--color-primary) l c h / 0.2),
+              0 2px 8px oklch(from var(--color-primary) l c h / 0.12);
+}
+.card.owned:hover {
+  box-shadow: 0 0 0 1px oklch(from var(--color-primary) l c h / 0.35),
+              var(--shadow-md);
+}
 
 .imageWrap { position: relative; aspect-ratio: 1; background: var(--color-surface-offset); display: flex; align-items: center; justify-content: center; }
 .img { width: 100% !important; height: 100% !important; object-fit: contain; }
@@ -21,9 +32,10 @@
 .ownedBadge {
   position: absolute; top: 3px; right: 3px;
   background: var(--color-primary); color: var(--color-bg);
-  width: 16px; height: 16px; border-radius: 50%;
+  width: 18px; height: 18px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 9px; font-weight: 700;
+  box-shadow: 0 1px 4px oklch(from var(--color-primary) l c h / 0.4);
 }
 .favBtn {
   position: absolute; bottom: 3px; right: 3px;
