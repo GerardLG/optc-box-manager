@@ -16,6 +16,12 @@ function execJS(js: string, varName: string): unknown[] {
   return fn() as unknown[]
 }
 
+function isPlaceholder(row: unknown[]): boolean {
+  const name = row[0]
+  const type = row[1]
+  return !name || name === '' || type === 'Type' || type === null
+}
+
 export async function fetchAllUnits(
   onProgress?: (pct: number) => void
 ): Promise<ExtendedUnit[]> {
@@ -46,31 +52,33 @@ export async function fetchAllUnits(
 
   onProgress?.(80)
 
-  const result: ExtendedUnit[] = rawUnits.map((row: any, idx: number) => {
-    const cooldown = rawCooldowns[idx] ?? undefined
-    return {
-      id:       idx + 1,
-      name:     row[0] ?? `Unit #${idx + 1}`,
-      type:     row[1],
-      class:    row[2],
-      stars:    Number(row[3]) || 0,
-      cost:     row[4] ?? 0,
-      combo:    row[5] ?? 0,
-      slots:    row[6] ?? 0,
-      maxLevel: row[7] ?? 99,
-      minHP:    row[8]  ?? 0,
-      maxHP:    row[9]  ?? 0,
-      limitHP:  row[9]  ?? 0,
-      minATK:   row[10] ?? 0,
-      maxATK:   row[11] ?? 0,
-      limitATK: row[11] ?? 0,
-      minRCV:   row[12] ?? 0,
-      maxRCV:   row[13] ?? 0,
-      limitRCV: row[13] ?? 0,
-      cooldown,
-      detail:   {},
-    } as ExtendedUnit
-  })
+  const result: ExtendedUnit[] = rawUnits
+    .map((row: any, idx: number) => {
+      const cooldown = rawCooldowns[idx] ?? undefined
+      return {
+        id:       idx + 1,
+        name:     row[0] ?? `Unit #${idx + 1}`,
+        type:     row[1],
+        class:    row[2],
+        stars:    Number(row[3]) || 0,
+        cost:     row[4] ?? 0,
+        combo:    row[5] ?? 0,
+        slots:    row[6] ?? 0,
+        maxLevel: row[7] ?? 99,
+        minHP:    row[8]  ?? 0,
+        maxHP:    row[9]  ?? 0,
+        limitHP:  row[9]  ?? 0,
+        minATK:   row[10] ?? 0,
+        maxATK:   row[11] ?? 0,
+        limitATK: row[11] ?? 0,
+        minRCV:   row[12] ?? 0,
+        maxRCV:   row[13] ?? 0,
+        limitRCV: row[13] ?? 0,
+        cooldown,
+        detail:   {},
+      } as ExtendedUnit
+    })
+    .filter((u: ExtendedUnit) => u.name && u.name !== '' && u.type !== ('Type' as any))
 
   onProgress?.(100)
   return result
