@@ -12,13 +12,12 @@ function formatId(id: number): string {
   return String(id).padStart(4, '0')
 }
 
-// 2Shankz es el CDN público que usa la comunidad OPTC — sin hotlink protection
+// Rutas verificadas del repo público 2Shankz/optc-db.github.io
 function buildUrls(id: number): string[] {
   const fid = formatId(id)
   return [
-    `https://raw.githubusercontent.com/2Shankz/OPTC-DB/master/images/thumbnail/jap/f${fid}.png`,
-    `https://raw.githubusercontent.com/2Shankz/OPTC-DB/master/images/thumbnail/gl/f${fid}.png`,
-    `https://optc-db.github.io/api/images/thumbnail/jap/${fid}`,
+    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/res/thumbnail/jap/f${fid}.png`,
+    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/res/thumbnail/gl/f${fid}.png`,
   ]
 }
 
