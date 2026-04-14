@@ -12,12 +12,19 @@ function formatId(id: number): string {
   return String(id).padStart(4, '0')
 }
 
-// Rutas verificadas del repo público 2Shankz/optc-db.github.io
+/**
+ * Construye las URLs de thumbnail según la lógica de utils.getThumbnailUrl
+ * de optc-db.github.io (2Shankz).
+ * Estructura: /api/images/thumbnail/{glo|jap}/{miles}/{centenas}00/{id_4dig}.png
+ * Ejemplo ID 1284 → glo/1/200/1284.png
+ */
 function buildUrls(id: number): string[] {
   const fid = formatId(id)
+  const folder = `${Math.trunc(id / 1000)}/${Math.trunc((id % 1000) / 100)}00`
+  const base = 'https://optc-db.github.io/api/images/thumbnail'
   return [
-    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/res/thumbnail/jap/f${fid}.png`,
-    `https://raw.githubusercontent.com/2Shankz/optc-db.github.io/master/res/thumbnail/gl/f${fid}.png`,
+    `${base}/glo/${folder}/${fid}.png`,
+    `${base}/jap/${folder}/${fid}.png`,
   ]
 }
 
