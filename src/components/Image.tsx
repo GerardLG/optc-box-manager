@@ -12,28 +12,29 @@ function formatId(id: number): string {
   return String(id).padStart(4, '0')
 }
 
+// 2Shankz es el CDN público que usa la comunidad OPTC — sin hotlink protection
 function buildUrls(id: number): string[] {
   const fid = formatId(id)
   return [
-    // Servidor oficial OPTC Global
-    `https://onepiece-treasurecruise.com/en/wp-content/uploads/sites/2/images/f${fid}.png`,
-    // Servidor oficial OPTC Japón (fallback)
-    `https://onepiece-treasurecruise.com/wp-content/uploads/sites/1/images/f${fid}.png`,
+    `https://raw.githubusercontent.com/2Shankz/OPTC-DB/master/images/thumbnail/jap/f${fid}.png`,
+    `https://raw.githubusercontent.com/2Shankz/OPTC-DB/master/images/thumbnail/gl/f${fid}.png`,
+    `https://optc-db.github.io/api/images/thumbnail/jap/${fid}`,
   ]
 }
 
 function FallbackSVG({ name, size }: { name: string; size: number }) {
   const letter = name ? name.charAt(0).toUpperCase() : '?'
+  const uid = `gf${letter}${size}`
   return (
     <svg width={size} height={size} viewBox="0 0 100 100"
       style={{ display: 'block', borderRadius: '8px', flexShrink: 0 }} aria-label={name}>
       <defs>
-        <linearGradient id={`gf${letter}`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={uid} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="var(--color-surface-offset)" />
           <stop offset="100%" stopColor="var(--color-surface-dynamic)" />
         </linearGradient>
       </defs>
-      <rect width="100" height="100" rx="12" fill={`url(#gf${letter})`} />
+      <rect width="100" height="100" rx="12" fill={`url(#${uid})`} />
       <text x="50" y="67" textAnchor="middle" fontSize="40" fontWeight="700"
         fill="var(--color-text-faint)" fontFamily="var(--font-body, sans-serif)">
         {letter}

@@ -6,11 +6,23 @@ export function Layout() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.logo}>
-          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-label="OPTC Box Manager">
-            <circle cx="20" cy="20" r="18" stroke="var(--color-primary)" strokeWidth="2.5" />
-            <circle cx="20" cy="20" r="8" fill="var(--color-primary)" />
-            <line x1="20" y1="2" x2="20" y2="38" stroke="var(--color-primary)" strokeWidth="2.5" />
-            <line x1="2" y1="20" x2="38" y2="20" stroke="var(--color-primary)" strokeWidth="2.5" />
+          {/* Sombrero de paja de Luffy */}
+          <svg width="34" height="28" viewBox="0 0 68 52" fill="none" aria-label="OPTC Box Manager">
+            {/* Ala izquierda */}
+            <path d="M2 36 C8 28, 18 26, 26 28 L22 38 C14 38, 6 40, 2 36Z"
+              fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
+            {/* Ala derecha */}
+            <path d="M66 36 C60 28, 50 26, 42 28 L46 38 C54 38, 62 40, 66 36Z"
+              fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
+            {/* Copa del sombrero */}
+            <path d="M20 30 C20 12, 48 12, 48 30 L46 34 C44 36, 24 36, 22 34 Z"
+              fill="var(--color-primary)" stroke="var(--color-primary-hover)" strokeWidth="1.2" />
+            {/* Banda roja */}
+            <path d="M22 33 C26 30, 42 30, 46 33"
+              stroke="#cc2222" strokeWidth="3" strokeLinecap="round" fill="none" />
+            {/* Borde del ala — línea continua */}
+            <path d="M2 36 C10 42, 28 42, 34 40 C40 42, 58 42, 66 36"
+              stroke="var(--color-primary-hover)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           </svg>
           <span>OPTC Box</span>
         </div>
