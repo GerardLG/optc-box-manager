@@ -12,7 +12,7 @@ import styles from './MyUserBox.module.css'
 type ViewMode = 'all' | 'owned' | 'missing' | 'favorites'
 
 export default function MyUserBox() {
-  const { units, isLoading, loadingProgress, error } = useUnits()
+  const { units, isLoading, loadingProgress, error, retry } = useUnits()
   const { box, add, remove } = useUserBox()
   const { favorites, toggle: toggleFav, isFavorite } = useFavorites()
   const { filters, setFilters, results, reset } = useSearch(units)
@@ -36,10 +36,11 @@ export default function MyUserBox() {
   }, [box, remove])
 
   if (error) return (
-    <div className={styles.error}>
+    <div className={styles.error} role="alert">
       <h2>Error al cargar los datos</h2>
-      <p>{error}</p>
-      <button onClick={() => window.location.reload()}>Reintentar</button>
+      <p>Comprueba tu conexión o si los datos de optc-db están disponibles.</p>
+      <p style={{ fontSize: '0.85rem', opacity: 0.85 }}>{error}</p>
+      <button type="button" onClick={retry}>Reintentar</button>
     </div>
   )
 
@@ -69,11 +70,17 @@ export default function MyUserBox() {
       <SearchPanel filters={filters} onChange={setFilters} onReset={reset}
         totalCount={units.length} filteredCount={displayed.length} />
 
-      <div className={styles.viewTabs}>
+      <div className={styles.viewTabs} role="tablist" aria-label="Vista del box">
         {(['all', 'owned', 'missing', 'favorites'] as ViewMode[]).map(m => (
-          <button key={m}
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={viewMode === m}
+            id={`box-tab-${m}`}
             className={`${styles.tab} ${viewMode === m ? styles.tabActive : ''}`}
-            onClick={() => setViewMode(m)}>
+            onClick={() => setViewMode(m)}
+          >
             {m === 'all'       && `Todos (${units.length.toLocaleString()})`}
             {m === 'owned'     && `Mi box (${box.length})`}
             {m === 'missing'   && 'Sin conseguir'}

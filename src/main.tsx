@@ -3,14 +3,13 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/global.css'
+import { applyDocumentTheme, getSavedTheme } from './services/theme'
 
-// Tema inicial (evita FOUC)
+// Tema inicial (misma fuente que Layout / Ajustes; evita FOUC)
 try {
-  const raw = localStorage.getItem('optc_settings_v1')
-  const theme = raw ? (JSON.parse(raw) as { theme?: string }).theme : null
-  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark')
+  applyDocumentTheme(getSavedTheme())
 } catch {
-  document.documentElement.setAttribute('data-theme', 'dark')
+  applyDocumentTheme('dark')
 }
 
 const root = document.getElementById('root')

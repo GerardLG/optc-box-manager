@@ -1,25 +1,24 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import styles from './Layout.module.css'
-
-function getInitialTheme(): 'light' | 'dark' {
-  try {
-    const stored = (window as any).__optcTheme
-    if (stored === 'light' || stored === 'dark') return stored
-  } catch {}
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
+import { applyDocumentTheme, getSavedTheme, persistTheme, type Theme } from '../../services/theme'
 
 export function Layout() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
+  const location = useLocation()
+  const [theme, setTheme] = useState<Theme>(() => getSavedTheme())
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    ;(window as any).__optcTheme = theme
+    setTheme(getSavedTheme())
+  }, [location.pathname])
+
+  useEffect(() => {
+    applyDocumentTheme(theme)
   }, [theme])
 
   function toggleTheme() {
-    setTheme(t => t === 'dark' ? 'light' : 'dark')
+    const next: Theme = theme === 'dark' ? 'light' : 'dark'
+    persistTheme(next)
+    setTheme(next)
   }
 
   return (

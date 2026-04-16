@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { Suspense, lazy, Component, type ReactNode, type ErrorInfo } from 'react'
 import { Layout } from './components/Layout'
+import { GithubPagesRedirect } from './components/GithubPagesRedirect'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null }
@@ -46,6 +47,7 @@ function Wrap({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <ErrorBoundary>
+      <GithubPagesRedirect />
       <Routes>
         <Route element={<Layout />}>
           <Route index         element={<Wrap><MyUserBox /></Wrap>} />

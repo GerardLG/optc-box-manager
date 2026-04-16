@@ -14,7 +14,7 @@ type Tab = 'info' | 'skills' | 'evo' | 'team' | 'progress'
 export default function Detail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { units } = useUnits()
+  const { units, isLoading, error, retry } = useUnits()
   const { box, add, update, remove } = useUserBox()
 
   const unit = units.find(u => u.id === Number(id))
@@ -79,12 +79,35 @@ export default function Detail() {
       .filter(Boolean) as ExtendedUnit[]
   }, [unit, units])
 
-  if (!unit) return (
-    <div className={styles.notFound}>
-      <p>{units.length === 0 ? 'Cargando...' : 'Personaje no encontrado'}</p>
-      <button onClick={() => navigate(-1)}>← Volver</button>
-    </div>
-  )
+  if (error) {
+    return (
+      <div className={styles.loadError} role="alert">
+        <h2 className={styles.loadErrorTitle}>Error al cargar los datos</h2>
+        <p>No se pudieron obtener los personajes. {error}</p>
+        <div className={styles.loadErrorActions}>
+          <button type="button" className={styles.loadErrorBtn} onClick={retry}>Reintentar</button>
+          <button type="button" className={styles.loadErrorLink} onClick={() => navigate(-1)}>← Volver</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading && units.length === 0) {
+    return (
+      <div className={styles.notFound}>
+        <p>Cargando…</p>
+      </div>
+    )
+  }
+
+  if (!unit) {
+    return (
+      <div className={styles.notFound}>
+        <p>Personaje no encontrado</p>
+        <button type="button" onClick={() => navigate(-1)}>← Volver</button>
+      </div>
+    )
+  }
 
   const isOwned = !!userUnit
 
@@ -115,7 +138,7 @@ export default function Detail() {
         </button>
 
         <div className={styles.heroContent}>
-          <UnitImage unitId={unit.id} name={unit.name} size={120} className={styles.heroImage} />
+          <UnitImage unitId={unit.id} name={unit.name} size={120} className={styles.heroImage} variant="hero" />
           <div className={styles.heroInfo}>
             <div className={styles.heroMeta}>
               <span className={styles.heroId}>#{String(unit.id).padStart(4, '0')}</span>
@@ -146,10 +169,14 @@ export default function Detail() {
         </div>
       </div>
 
-      <div className={styles.tabs}>
+      <div className={styles.tabs} role="tablist" aria-label="Secciones del personaje">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            id={`detail-tab-${key}`}
             className={`${styles.tab} ${tab === key ? styles.tabActive : ''}`}
             onClick={() => setTab(key)}
           >{label}</button>

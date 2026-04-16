@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { loadSettings, saveSettings, isStoragePersisted, type AppSettings } from '../../services/storage'
+import { applyDocumentTheme } from '../../services/theme'
 import styles from './Settings.module.css'
 
 export default function Settings() {
@@ -10,7 +11,7 @@ export default function Settings() {
     const next = { ...settings, [key]: value }
     setSettings(next)
     saveSettings(next)
-    if (key === 'theme') document.documentElement.setAttribute('data-theme', value as string)
+    if (key === 'theme') applyDocumentTheme(value as 'light' | 'dark')
   }
 
   return (

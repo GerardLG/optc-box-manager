@@ -62,7 +62,7 @@ export function loadBox(): UserUnit[] {
 export function saveBox(box: UserUnit[]) {
   // Only persist lightweight fields — strip the full `detail` object to save
   // space and avoid stale skill data. On load, detail is re-hydrated from the
-  // live units cache (see hydrateBox in useUserBox).
+  // live units cache (see setUnitsCache / useUserBox rehydration).
   const slim = box.map(u => ({
     ...u,
     unit: {

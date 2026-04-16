@@ -96,7 +96,6 @@ export async function fetchAllUnits(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawUnits     = execJS<any[]>(unitsText, 'units')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawCooldowns = execJS<([number, number] | null)[]>(cooldownsText, 'cooldowns')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawDetails   = detailsText ? execJS<Record<number, any>>(detailsText, 'details') : {}

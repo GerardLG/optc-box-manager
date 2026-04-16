@@ -43,17 +43,26 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
             type="search"
             className={styles.input}
             placeholder={`Buscar entre ${totalCount.toLocaleString()} personajes…`}
+            aria-label="Buscar personaje por nombre"
             value={filters.query}
             onChange={e => onChange({ ...filters, query: e.target.value })}
           />
           {filters.query && (
-            <button className={styles.clearBtn} onClick={() => onChange({ ...filters, query: '' })} aria-label="Limpiar búsqueda">✕</button>
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={() => onChange({ ...filters, query: '' })}
+              aria-label="Limpiar búsqueda"
+            >✕</button>
           )}
         </div>
         <button
+          type="button"
+          id="search-advanced-toggle"
           className={`${styles.filterBtn} ${expanded ? styles.filterBtnActive : ''} ${hasFilters ? styles.filterBtnDot : ''}`}
           onClick={() => setExpanded(e => !e)}
           aria-expanded={expanded}
+          aria-controls="search-advanced-filters"
           aria-label="Filtros avanzados"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -63,15 +72,22 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
       </div>
 
       {expanded && (
-        <div className={styles.filters}>
+        <div
+          id="search-advanced-filters"
+          className={styles.filters}
+          role="region"
+          aria-labelledby="search-advanced-toggle"
+        >
           <div className={styles.filterGroup}>
             <span className={styles.filterLabel}>Tipo</span>
             <div className={styles.chips}>
               {ALL_TYPES.map(t => (
                 <button
                   key={t}
+                  type="button"
                   className={`${styles.chip} ${filters.types.includes(t) ? styles.chipActive : ''}`}
                   style={{ '--chip-color': TYPE_COLORS[t] } as React.CSSProperties}
+                  aria-pressed={filters.types.includes(t)}
                   onClick={() => toggle('types', t as never)}
                 >{t}</button>
               ))}
@@ -84,7 +100,9 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
               {ALL_CLASSES.map(c => (
                 <button
                   key={c}
+                  type="button"
                   className={`${styles.chip} ${filters.classes.includes(c) ? styles.chipActive : ''}`}
+                  aria-pressed={filters.classes.includes(c)}
                   onClick={() => toggle('classes', c as never)}
                 >{c}</button>
               ))}
@@ -110,8 +128,12 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
                   <option value="rcv">RCV</option>
                   <option value="cost">Coste</option>
                 </select>
-                <button className={styles.sortDirBtn}
-                  onClick={() => onChange({ ...filters, sortDir: filters.sortDir === 'asc' ? 'desc' : 'asc' })}>
+                <button
+                  type="button"
+                  className={styles.sortDirBtn}
+                  aria-label={filters.sortDir === 'asc' ? 'Orden descendente' : 'Orden ascendente'}
+                  onClick={() => onChange({ ...filters, sortDir: filters.sortDir === 'asc' ? 'desc' : 'asc' })}
+                >
                   {filters.sortDir === 'asc' ? '↑' : '↓'}
                 </button>
               </div>
@@ -120,7 +142,9 @@ export function SearchPanel({ filters, onChange, onReset, totalCount, filteredCo
 
           <div className={styles.filterFooter}>
             <span className={styles.resultCount}>{filteredCount.toLocaleString()} resultado{filteredCount !== 1 ? 's' : ''}</span>
-            {hasFilters && <button className={styles.resetBtn} onClick={onReset}>Limpiar filtros</button>}
+            {hasFilters && (
+              <button type="button" className={styles.resetBtn} onClick={onReset}>Limpiar filtros</button>
+            )}
           </div>
         </div>
       )}

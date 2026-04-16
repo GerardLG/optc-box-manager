@@ -30,9 +30,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install and build
+      - name: Install, lint, test, build
         run: |
           npm install
+          npm run lint
+          npm run test
           npm run build
           touch dist/.nojekyll
 

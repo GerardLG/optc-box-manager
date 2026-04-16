@@ -2,25 +2,16 @@ import { useState, useCallback, useEffect } from 'react'
 import type { UserUnit } from '../models/userBox'
 import type { ExtendedUnit } from '../models/units'
 import { loadBox, saveBox, exportBoxJSON, importBoxJSON } from '../services/storage'
-
-// Units cache reference — set once units finish loading via hydrateBox()
-let _unitsCache: ExtendedUnit[] | null = null
-
-/** Call this once units are loaded so the box can re-hydrate stale detail objects */
-export function hydrateBox(units: ExtendedUnit[]) {
-  _unitsCache = units
-}
+import { getUnitsCache, subscribeUnitsCache } from '../services/unitsCache'
 
 /** Merge fresh detail/stats from live units cache into a stored box entry */
-function mergeDetail(entry: UserUnit): UserUnit {
-  if (!_unitsCache) return entry
-  const live = _unitsCache.find(u => u.id === entry.unit.id)
+function mergeDetail(entry: UserUnit, liveCache: ExtendedUnit[]): UserUnit {
+  const live = liveCache.find(u => u.id === entry.unit.id)
   if (!live) return entry
   return {
     ...entry,
     unit: {
-      ...live,               // always use latest name/type/class/stats
-      // preserve user-specific overrides if any
+      ...live,
     },
   }
 }
@@ -28,19 +19,22 @@ function mergeDetail(entry: UserUnit): UserUnit {
 export function useUserBox() {
   const [box, setBox] = useState<UserUnit[]>(() => loadBox())
 
-  // Re-hydrate whenever units cache becomes available
+  // Re-hydrate cuando la caché de unidades se publica o ya existía al montar
   useEffect(() => {
-    if (!_unitsCache) return
-    setBox(prev => {
-      const hydrated = prev.map(mergeDetail)
-      // Only update state if something actually changed
-      const changed = hydrated.some((h, i) =>
-        h.unit.detail !== prev[i]?.unit.detail
-      )
-      return changed ? hydrated : prev
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [_unitsCache])
+    function runHydration() {
+      const liveCache = getUnitsCache()
+      if (!liveCache) return
+      setBox(prev => {
+        const hydrated = prev.map(e => mergeDetail(e, liveCache))
+        const changed = hydrated.some((h, i) =>
+          h.unit.detail !== prev[i]?.unit.detail
+        )
+        return changed ? hydrated : prev
+      })
+    }
+    runHydration()
+    return subscribeUnitsCache(runHydration)
+  }, [])
 
   const persist = useCallback((next: UserUnit[]) => {
     setBox(next)
@@ -83,8 +77,8 @@ export function useUserBox() {
 
   const importDB = useCallback((raw: string) => {
     const imported = importBoxJSON(raw)
-    // Re-hydrate immediately if units are already loaded
-    const hydrated = _unitsCache ? imported.map(mergeDetail) : imported
+    const liveCache = getUnitsCache()
+    const hydrated = liveCache ? imported.map(e => mergeDetail(e, liveCache)) : imported
     persist(hydrated)
   }, [persist])
 
