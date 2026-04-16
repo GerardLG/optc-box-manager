@@ -47,9 +47,27 @@
 .favBtn:hover { transform: scale(1.2); }
 .favActive { color: #e74c3c !important; }
 
-.info { padding: 4px 6px 0; }
-.name { display: block; font-size: 10px; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.id   { display: block; font-size: 9px; color: var(--color-text-faint); font-family: monospace; }
+.info { padding: var(--space-2) var(--space-2) 0; min-height: 2.75rem; }
+.name {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.id {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums;
+}
 
 .actions { display: flex; justify-content: flex-end; padding: 3px 5px 4px; }
 .btn { width: 22px; height: 22px; border-radius: 50%; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 120ms; }

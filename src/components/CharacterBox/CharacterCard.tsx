@@ -42,7 +42,10 @@ export const CharacterCard = memo(function CharacterCard({
       </div>
       <div className={styles.info}>
         <span className={styles.name}>{unit.name}</span>
-        <span className={styles.id}>#{String(unit.id).padStart(4, '0')}</span>
+        <span
+          className={styles.id}
+          title="ID oficial en el juego (optc-db)"
+        >#{String(unit.id).padStart(4, '0')}</span>
       </div>
       <div className={styles.actions}>
         {isOwned

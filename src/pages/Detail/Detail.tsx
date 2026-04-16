@@ -141,10 +141,18 @@ export default function Detail() {
           <UnitImage unitId={unit.id} name={unit.name} size={120} className={styles.heroImage} variant="hero" />
           <div className={styles.heroInfo}>
             <div className={styles.heroMeta}>
-              <span className={styles.heroId}>#{String(unit.id).padStart(4, '0')}</span>
-              <TypeBadge type={unit.type} size={22} />
+              <span
+                className={styles.heroId}
+                title="ID oficial del personaje en One Piece Treasure Cruise (índice de la base optc-db)"
+              >
+                #{String(unit.id).padStart(4, '0')}
+              </span>
+              <TypeBadge type={unit.type} size={24} />
               <span className={styles.heroStars}>{'\u2605'.repeat(Math.min(Number(unit.stars), 6))}</span>
             </div>
+            <p className={styles.heroIdNote}>
+              Los números de personaje coinciden con el juego y la base de datos enlazada (optc-db).
+            </p>
             <h1 className={styles.heroName}>{unit.name}</h1>
             <div className={styles.heroClass}>
               {(Array.isArray(unit.class) ? (unit.class as string[]).flat() : [String(unit.class)]).join(' / ')}
